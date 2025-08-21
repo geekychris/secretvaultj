@@ -1,0 +1,31 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driverClassName: org.h2.Driver
+    username: sa
+    password:
+  
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+  
+  cache:
+    type: simple
+
+vault:
+  jwt:
+    secret: testSecretKeyForJunit1234567890123456789012345678901234567890
+    expiration: 3600  # 1 hour for tests
+  
+  encryption:
+    key: testEncryptionKey32CharsForJUnit!
+  
+  replication:
+    enabled: false  # Disable replication for tests
+
+logging:
+  level:
+    com.example.vault: DEBUG
+    org.springframework.security: WARN
+    org.hibernate.SQL: WARN

@@ -1,0 +1,304 @@
+### Java Vault API - Complete Secret Management Workflow
+### Converted from curl commands in README.md
+
+### 1. Get authentication token
+POST http://localhost:8200/v1/auth/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "2bef2cf4-1144-4d3c-8ba8-1ae7674f99cc"
+}
+
+> {%
+client.global.set("auth_token", response.body.token);
+%}
+
+###
+
+### 2. Create database password secret
+POST http://localhost:8200/v1/secret/myapp/prod?key=db-password
+Authorization: Bearer {{auth_token}}
+Content-Type: application/json
+
+{
+  "value": "complex-db-password",
+  "metadata": {
+    "env": "production"
+  }
+}
+
+###
+
+### 3. Create API key secret  
+POST http://localhost:8200/v1/secret/myapp/prod?key=api-key
+Authorization: Bearer {{auth_token}}
+Content-Type: application/json
+
+{
+  "value": "sk_live_abcdef123456",
+  "metadata": {
+    "env": "production"
+  }
+}
+
+###
+
+### 4. List all secrets in the path
+GET http://localhost:8200/v1/secret/list/myapp/prod
+Authorization: Bearer {{auth_token}}
+
+###
+
+### 5. Read a specific secret (database password)
+GET http://localhost:8200/v1/secret/myapp/prod?key=db-password
+Authorization: Bearer {{auth_token}}
+
+###
+
+### 6. Update a secret (rotation)
+PUT http://localhost:8200/v1/secret/myapp/prod?key=db-password
+Authorization: Bearer {{auth_token}}
+Content-Type: application/json
+
+{
+  "value": "new-rotated-password-2023",
+  "metadata": {
+    "env": "production",
+    "rotated": "true"
+  }
+}
+
+###
+
+### 7. Delete a secret when no longer needed
+DELETE http://localhost:8200/v1/secret/myapp/prod?key=api-key
+Authorization: Bearer {{auth_token}}
+
+###
+
+### Additional API endpoints from the documentation
+
+### Validate token
+POST http://localhost:8200/v1/auth/validate
+Authorization: Bearer {{auth_token}}
+
+###
+
+### Health Check
+GET http://localhost:8200/v1/sys/health
+
+###
+
+### System Status
+GET http://localhost:8200/v1/sys/status
+
+###
+
+### Example: Create secret with more metadata
+POST http://localhost:8200/v1/secret/myapp/production?key=database-password
+Authorization: Bearer {{auth_token}}
+Content-Type: application/json
+
+{
+  "value": "super-secret-password",
+  "metadata": {
+    "environment": "production",
+    "service": "api"
+  }
+}
+
+###
+
+### Example: Read secret with full path
+GET http://localhost:8200/v1/secret/myapp/production?key=database-password
+Authorization: Bearer {{auth_token}}
+
+###
+
+### Example: Update secret with reason
+PUT http://localhost:8200/v1/secret/myapp/production?key=database-password
+Authorization: Bearer {{auth_token}}
+Content-Type: application/json
+
+{
+  "value": "new-secret-password",
+  "metadata": {
+    "environment": "production",
+    "service": "api",
+    "updated_reason": "rotation"
+  }
+}
+
+###
+
+### Example: Delete secret
+DELETE http://localhost:8200/v1/secret/myapp/production?key=database-password
+Authorization: Bearer {{auth_token}}
+
+###
+
+### Example: List secrets in different path
+GET http://localhost:8200/v1/secret/list/myapp/production
+Authorization: Bearer {{auth_token}}
+
+###
+
+### =============================================================
+### SECRET VERSIONING ENDPOINTS
+### =============================================================
+
+### List all versions of a specific secret
+GET http://localhost:8200/v1/secret/versions/myapp/prod?key=db-password
+Authorization: Bearer {{auth_token}}
+
+###
+
+### Get version information summary for a secret
+GET http://localhost:8200/v1/secret/version-info/myapp/prod?key=db-password
+Authorization: Bearer {{auth_token}}
+
+###
+
+### Get a range of versions (versions 1-2)
+GET http://localhost:8200/v1/secret/version-range/myapp/prod?key=db-password&startVersion=1&endVersion=2
+Authorization: Bearer {{auth_token}}
+
+###
+
+### Get a range of versions (from version 2 onwards)
+GET http://localhost:8200/v1/secret/version-range/myapp/prod?key=db-password&startVersion=2
+Authorization: Bearer {{auth_token}}
+
+###
+
+### Get all versions up to version 2
+GET http://localhost:8200/v1/secret/version-range/myapp/prod?key=db-password&endVersion=2
+Authorization: Bearer {{auth_token}}
+
+###
+
+### Delete a specific version of a secret
+DELETE http://localhost:8200/v1/secret/version/myapp/prod?key=db-password&version=1
+Authorization: Bearer {{auth_token}}
+
+###
+
+### Restore a deleted version of a secret
+POST http://localhost:8200/v1/secret/restore-version/myapp/prod?key=db-password&version=1
+Authorization: Bearer {{auth_token}}
+
+###
+
+### =============================================================
+### VERSIONING WORKFLOW DEMONSTRATION
+### =============================================================
+
+### 1. Create initial secret (version 1)
+POST http://localhost:8200/v1/secret/demo/versioning?key=test-secret
+Authorization: Bearer {{auth_token}}
+Content-Type: application/json
+
+{
+  "value": "initial-secret-value-v1",
+  "metadata": {
+    "environment": "demo",
+    "version_note": "Initial version"
+  }
+}
+
+###
+
+### 2. Update secret (creates version 2)
+PUT http://localhost:8200/v1/secret/demo/versioning?key=test-secret
+Authorization: Bearer {{auth_token}}
+Content-Type: application/json
+
+{
+  "value": "updated-secret-value-v2",
+  "metadata": {
+    "environment": "demo",
+    "version_note": "First update"
+  }
+}
+
+###
+
+### 3. Update secret again (creates version 3)
+PUT http://localhost:8200/v1/secret/demo/versioning?key=test-secret
+Authorization: Bearer {{auth_token}}
+Content-Type: application/json
+
+{
+  "value": "final-secret-value-v3",
+  "metadata": {
+    "environment": "demo",
+    "version_note": "Final version"
+  }
+}
+
+###
+
+### 4. Read latest version (should be version 3)
+GET http://localhost:8200/v1/secret/demo/versioning?key=test-secret
+Authorization: Bearer {{auth_token}}
+
+###
+
+### 5. Read specific version (version 1)
+GET http://localhost:8200/v1/secret/demo/versioning?key=test-secret&version=1
+Authorization: Bearer {{auth_token}}
+
+###
+
+### 6. Read specific version (version 2)
+GET http://localhost:8200/v1/secret/demo/versioning?key=test-secret&version=2
+Authorization: Bearer {{auth_token}}
+
+###
+
+### 7. List all versions
+GET http://localhost:8200/v1/secret/versions/demo/versioning?key=test-secret
+Authorization: Bearer {{auth_token}}
+
+###
+
+### 8. Get version information
+GET http://localhost:8200/v1/secret/version-info/demo/versioning?key=test-secret
+Authorization: Bearer {{auth_token}}
+
+###
+
+### 9. Get version range (versions 2-3)
+GET http://localhost:8200/v1/secret/version-range/demo/versioning?key=test-secret&startVersion=2&endVersion=3
+Authorization: Bearer {{auth_token}}
+
+###
+
+### 10. Delete version 2
+DELETE http://localhost:8200/v1/secret/version/demo/versioning?key=test-secret&version=2
+Authorization: Bearer {{auth_token}}
+
+###
+
+### 11. List versions again (version 2 should be marked as deleted)
+GET http://localhost:8200/v1/secret/versions/demo/versioning?key=test-secret
+Authorization: Bearer {{auth_token}}
+
+###
+
+### 12. Restore version 2
+POST http://localhost:8200/v1/secret/restore-version/demo/versioning?key=test-secret&version=2
+Authorization: Bearer {{auth_token}}
+
+###
+
+### 13. List versions final check (version 2 should be restored)
+GET http://localhost:8200/v1/secret/versions/demo/versioning?key=test-secret
+Authorization: Bearer {{auth_token}}
+
+###
+
+### 14. Clean up - Delete all versions of the demo secret
+DELETE http://localhost:8200/v1/secret/demo/versioning?key=test-secret
+Authorization: Bearer {{auth_token}}
