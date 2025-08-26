@@ -4,6 +4,15 @@ import com.example.vault.dto.SecretRequest;
 import com.example.vault.entity.Identity;
 import com.example.vault.service.AuthenticationService;
 import com.example.vault.service.SecretService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,6 +29,8 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/v1/secret")
+@Tag(name = "Secrets", description = "Secret storage, retrieval, and management endpoints")
+@SecurityRequirement(name = "bearerAuth")
 public class SecretsController {
     
     private static final Logger logger = LoggerFactory.getLogger(SecretsController.class);
@@ -30,11 +41,39 @@ public class SecretsController {
     @Autowired
     private AuthenticationService authenticationService;
     
+    @Operation(
+            summary = "Create a new secret",
+            description = "Creates a new secret at the specified path with the given key and value"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "201",
+                    description = "Secret created successfully",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(
+                                    value = """
+                                    {
+                                      "success": true,
+                                      "message": "Secret created successfully",
+                                      "path": "app/config/database/password",
+                                      "timestamp": "2024-01-15T10:30:00"
+                                    }
+                                    """
+                            )
+                    )
+            ),
+            @ApiResponse(responseCode = "401", description = "Invalid or expired token"),
+            @ApiResponse(responseCode = "403", description = "Insufficient permissions")
+    })
     @PostMapping("/{path:.+}")
     public ResponseEntity<Map<String, Object>> createSecret(
+            @Parameter(description = "Secret storage path", example = "app/config/database")
             @PathVariable String path,
+            @Parameter(description = "Secret key name", example = "password")
             @RequestParam String key,
             @Valid @RequestBody SecretRequest request,
+            @Parameter(description = "Bearer token for authentication")
             @RequestHeader(value = "Authorization", required = false) String authHeader) {
         
         String token = extractToken(authHeader);
@@ -58,11 +97,45 @@ public class SecretsController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
     
+    @Operation(
+            summary = "Retrieve a secret",
+            description = "Retrieves a secret by path and key, optionally specifying a version"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Secret retrieved successfully",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(
+                                    value = """
+                                    {
+                                      "success": true,
+                                      "path": "app/config/database/password",
+                                      "data": {
+                                        "value": "mysecretpassword",
+                                        "version": 3,
+                                        "metadata": {"environment": "production"}
+                                      },
+                                      "timestamp": "2024-01-15T10:30:00"
+                                    }
+                                    """
+                            )
+                    )
+            ),
+            @ApiResponse(responseCode = "404", description = "Secret not found"),
+            @ApiResponse(responseCode = "401", description = "Invalid or expired token"),
+            @ApiResponse(responseCode = "403", description = "Insufficient permissions")
+    })
     @GetMapping("/{path:.+}")
     public ResponseEntity<Map<String, Object>> getSecret(
+            @Parameter(description = "Secret storage path", example = "app/config/database")
             @PathVariable String path,
+            @Parameter(description = "Secret key name", example = "password")
             @RequestParam String key,
+            @Parameter(description = "Optional version number to retrieve specific version")
             @RequestParam(required = false) Integer version,
+            @Parameter(description = "Bearer token for authentication")
             @RequestHeader(value = "Authorization", required = false) String authHeader) {
         
         String token = extractToken(authHeader);
@@ -91,11 +164,41 @@ public class SecretsController {
         return ResponseEntity.ok(response);
     }
     
+    @Operation(
+            summary = "Update an existing secret",
+            description = "Updates an existing secret, creating a new version"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Secret updated successfully",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(
+                                    value = """
+                                    {
+                                      "success": true,
+                                      "message": "Secret updated successfully",
+                                      "path": "app/config/database/password",
+                                      "version": 4,
+                                      "timestamp": "2024-01-15T10:30:00"
+                                    }
+                                    """
+                            )
+                    )
+            ),
+            @ApiResponse(responseCode = "404", description = "Secret not found"),
+            @ApiResponse(responseCode = "401", description = "Invalid or expired token"),
+            @ApiResponse(responseCode = "403", description = "Insufficient permissions")
+    })
     @PutMapping("/{path:.+}")
     public ResponseEntity<Map<String, Object>> updateSecret(
+            @Parameter(description = "Secret storage path", example = "app/config/database")
             @PathVariable String path,
+            @Parameter(description = "Secret key name", example = "password")
             @RequestParam String key,
             @Valid @RequestBody SecretRequest request,
+            @Parameter(description = "Bearer token for authentication")
             @RequestHeader(value = "Authorization", required = false) String authHeader) {
         
         String token = extractToken(authHeader);
@@ -126,10 +229,38 @@ public class SecretsController {
         }
     }
     
+    @Operation(
+            summary = "Delete a secret",
+            description = "Permanently deletes a secret and all its versions"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Secret deleted successfully",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(
+                                    value = """
+                                    {
+                                      "success": true,
+                                      "message": "Secret deleted successfully",
+                                      "timestamp": "2024-01-15T10:30:00"
+                                    }
+                                    """
+                            )
+                    )
+            ),
+            @ApiResponse(responseCode = "404", description = "Secret not found"),
+            @ApiResponse(responseCode = "401", description = "Invalid or expired token"),
+            @ApiResponse(responseCode = "403", description = "Insufficient permissions")
+    })
     @DeleteMapping("/{path:.+}")
     public ResponseEntity<Map<String, Object>> deleteSecret(
+            @Parameter(description = "Secret storage path", example = "app/config/database")
             @PathVariable String path,
+            @Parameter(description = "Secret key name", example = "password")
             @RequestParam String key,
+            @Parameter(description = "Bearer token for authentication")
             @RequestHeader(value = "Authorization", required = false) String authHeader) {
         
         String token = extractToken(authHeader);
@@ -155,10 +286,39 @@ public class SecretsController {
         }
     }
     
+    @Operation(
+            summary = "List secrets at a path",
+            description = "Lists all secret keys available at the specified path"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Secrets listed successfully",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(
+                                    value = """
+                                    {
+                                      "success": true,
+                                      "path": "app/config/database",
+                                      "keys": ["password", "username", "host"],
+                                      "count": 3,
+                                      "timestamp": "2024-01-15T10:30:00"
+                                    }
+                                    """
+                            )
+                    )
+            ),
+            @ApiResponse(responseCode = "401", description = "Invalid or expired token"),
+            @ApiResponse(responseCode = "403", description = "Insufficient permissions")
+    })
     @GetMapping("/list/{path:.+}")
     public ResponseEntity<Map<String, Object>> listSecrets(
+            @Parameter(description = "Path to list secrets from", example = "app/config/database")
             @PathVariable String path,
+            @Parameter(description = "Whether to list recursively through subdirectories")
             @RequestParam(defaultValue = "false") boolean recursive,
+            @Parameter(description = "Bearer token for authentication")
             @RequestHeader(value = "Authorization", required = false) String authHeader) {
         
         String token = extractToken(authHeader);

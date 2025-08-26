@@ -185,6 +185,152 @@ POST /v1/auth/validate
 Authorization: Bearer <token>
 ```
 
+### User Management (Admin Only)
+
+The system provides comprehensive user management capabilities accessible only to administrators with the `admin` policy.
+
+#### Create New User
+```http
+POST /v1/admin/users
+Authorization: Bearer <admin-token>
+Content-Type: application/json
+
+{
+  "username": "developer1",
+  "password": "SecurePassword123!",
+  "type": "USER",
+  "policies": ["developer"],
+  "enabled": true,
+  "description": "Frontend developer - Team Alpha"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "User created successfully",
+  "timestamp": "2024-01-15T10:30:00",
+  "data": {
+    "id": 123,
+    "username": "developer1",
+    "type": "USER",
+    "enabled": true,
+    "policies": ["developer"],
+    "createdAt": "2024-01-15T10:30:00",
+    "updatedAt": "2024-01-15T10:30:00",
+    "lastLoginAt": null
+  }
+}
+```
+
+#### Get User Details
+```http
+GET /v1/admin/users/{username}
+Authorization: Bearer <admin-token>
+```
+
+#### List All Users
+```http
+GET /v1/admin/users
+Authorization: Bearer <admin-token>
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Users retrieved successfully",
+  "timestamp": "2024-01-15T10:30:00",
+  "data": [
+    {
+      "id": 1,
+      "username": "admin",
+      "type": "ADMIN",
+      "enabled": true,
+      "policies": ["admin"]
+    },
+    {
+      "id": 2,
+      "username": "developer1",
+      "type": "USER", 
+      "enabled": true,
+      "policies": ["developer"]
+    }
+  ]
+}
+```
+
+#### Update User
+```http
+PUT /v1/admin/users/{username}
+Authorization: Bearer <admin-token>
+Content-Type: application/json
+
+{
+  "password": "NewSecurePassword456!",
+  "policies": ["developer", "readonly"],
+  "enabled": true
+}
+```
+
+#### Delete User
+```http
+DELETE /v1/admin/users/{username}
+Authorization: Bearer <admin-token>
+```
+
+#### Enable/Disable User
+```http
+PATCH /v1/admin/users/{username}/status?enabled=false
+Authorization: Bearer <admin-token>
+```
+
+#### List Available Policies
+```http
+GET /v1/admin/policies
+Authorization: Bearer <admin-token>
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Policies retrieved successfully",
+  "timestamp": "2024-01-15T10:30:00",
+  "data": [
+    {
+      "id": 1,
+      "name": "admin",
+      "description": "Full administrative access",
+      "rules": ["*:*"]
+    },
+    {
+      "id": 2,
+      "name": "developer",
+      "description": "Developer access to development secrets",
+      "rules": [
+        "create:secret/dev/*",
+        "read:secret/dev/*",
+        "update:secret/dev/*",
+        "delete:secret/dev/*",
+        "list:secret/dev/*",
+        "read:secret/shared/*"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "readonly",
+      "description": "Read-only access to all secrets",
+      "rules": [
+        "read:secret/*",
+        "list:secret/*"
+      ]
+    }
+  ]
+}
+```
+
 ### Secrets Management
 
 #### Create Secret
@@ -455,6 +601,72 @@ TOKEN=$(curl -s -X POST http://localhost:8200/v1/auth/login \
 ```bash
 curl -s -X POST http://localhost:8200/v1/auth/validate \
   -H "Authorization: Bearer $TOKEN"
+```
+
+#### User Management (Admin Only)
+
+**Create a new user:**
+```bash
+# Get admin token first
+ADMIN_TOKEN=$(curl -s -X POST http://localhost:8200/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"admin123"}' | \
+  jq -r '.token')
+
+# Create new developer user
+curl -s -X POST http://localhost:8200/v1/admin/users \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "developer1",
+    "password": "SecurePassword123!",
+    "type": "USER",
+    "policies": ["developer"],
+    "enabled": true,
+    "description": "Frontend developer - Team Alpha"
+  }'
+```
+
+**List all users:**
+```bash
+curl -s -X GET http://localhost:8200/v1/admin/users \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+```
+
+**Get user details:**
+```bash
+curl -s -X GET http://localhost:8200/v1/admin/users/developer1 \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+```
+
+**Update user:**
+```bash
+curl -s -X PUT http://localhost:8200/v1/admin/users/developer1 \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "password": "NewSecurePassword456!",
+    "policies": ["developer", "readonly"],
+    "enabled": true
+  }'
+```
+
+**Disable user:**
+```bash
+curl -s -X PATCH "http://localhost:8200/v1/admin/users/developer1/status?enabled=false" \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+```
+
+**Delete user:**
+```bash
+curl -s -X DELETE http://localhost:8200/v1/admin/users/developer1 \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+```
+
+**List available policies:**
+```bash
+curl -s -X GET http://localhost:8200/v1/admin/policies \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
 ```
 
 #### Secrets Management

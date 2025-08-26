@@ -34,6 +34,11 @@ server:
   servlet:
     context-path: /
 
+vaadin:
+  productionMode: false
+  launch-browser: false
+  whitelisted-packages: com.example.vault
+
 management:
   endpoints:
     web:

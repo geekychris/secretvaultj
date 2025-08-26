@@ -211,6 +211,7 @@ public class SecretService {
     /**
      * List all versions of a specific secret
      */
+    @Transactional(readOnly = true)
     public List<Map<String, Object>> listSecretVersions(String path, String key, List<String> policies) {
         validatePath(path);
         
@@ -227,8 +228,20 @@ public class SecretService {
                     versionInfo.put("version", secret.getVersion());
                     versionInfo.put("created_at", secret.getCreatedAt());
                     versionInfo.put("updated_at", secret.getUpdatedAt());
-                    versionInfo.put("created_by", secret.getCreatedBy() != null ? secret.getCreatedBy().getName() : null);
-                    versionInfo.put("updated_by", secret.getUpdatedBy() != null ? secret.getUpdatedBy().getName() : null);
+                    
+                    // Safely handle proxy objects
+                    try {
+                        versionInfo.put("created_by", secret.getCreatedBy() != null ? secret.getCreatedBy().getName() : null);
+                    } catch (Exception e) {
+                        versionInfo.put("created_by", "Unknown");
+                    }
+                    
+                    try {
+                        versionInfo.put("updated_by", secret.getUpdatedBy() != null ? secret.getUpdatedBy().getName() : null);
+                    } catch (Exception e) {
+                        versionInfo.put("updated_by", "Unknown");
+                    }
+                    
                     versionInfo.put("metadata", deserializeMetadata(secret.getMetadata()));
                     versionInfo.put("deleted", secret.getDeleted());
                     versionInfo.put("deleted_at", secret.getDeletedAt());
@@ -303,8 +316,20 @@ public class SecretService {
                     result.put("version", secret.getVersion());
                     result.put("created_at", secret.getCreatedAt());
                     result.put("updated_at", secret.getUpdatedAt());
-                    result.put("created_by", secret.getCreatedBy() != null ? secret.getCreatedBy().getName() : null);
-                    result.put("updated_by", secret.getUpdatedBy() != null ? secret.getUpdatedBy().getName() : null);
+                    
+                    // Safely handle proxy objects
+                    try {
+                        result.put("created_by", secret.getCreatedBy() != null ? secret.getCreatedBy().getName() : null);
+                    } catch (Exception e) {
+                        result.put("created_by", "Unknown");
+                    }
+                    
+                    try {
+                        result.put("updated_by", secret.getUpdatedBy() != null ? secret.getUpdatedBy().getName() : null);
+                    } catch (Exception e) {
+                        result.put("updated_by", "Unknown");
+                    }
+                    
                     result.put("metadata", deserializeMetadata(secret.getMetadata()));
                     return result;
                 })

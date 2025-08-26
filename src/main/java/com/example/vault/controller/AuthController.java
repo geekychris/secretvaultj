@@ -2,6 +2,15 @@ package com.example.vault.controller;
 
 import com.example.vault.dto.AuthRequest;
 import com.example.vault.service.AuthenticationService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,6 +26,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/v1/auth")
+@Tag(name = "Authentication", description = "Authentication and token management endpoints")
 public class AuthController {
     
     private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
@@ -24,6 +34,48 @@ public class AuthController {
     @Autowired
     private AuthenticationService authenticationService;
     
+    @Operation(
+            summary = "Authenticate user and get JWT token",
+            description = "Authenticates a user with username and password, returns a JWT token for subsequent API calls"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200", 
+                    description = "Authentication successful",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = Map.class),
+                            examples = @ExampleObject(
+                                    value = """
+                                    {
+                                      "success": true,
+                                      "message": "Authentication successful",
+                                      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                                      "token_type": "Bearer",
+                                      "timestamp": "2024-01-15T10:30:00"
+                                    }
+                                    """
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401", 
+                    description = "Authentication failed",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(
+                                    value = """
+                                    {
+                                      "success": false,
+                                      "message": "Authentication failed",
+                                      "error": "Invalid credentials",
+                                      "timestamp": "2024-01-15T10:30:00"
+                                    }
+                                    """
+                            )
+                    )
+            )
+    })
     @PostMapping("/login")
     public ResponseEntity<Map<String, Object>> login(@Valid @RequestBody AuthRequest request) {
         logger.info("Login attempt for user: {}", request.getUsername());
@@ -54,8 +106,48 @@ public class AuthController {
         }
     }
     
+    @Operation(
+            summary = "Validate JWT token",
+            description = "Validates the provided JWT token and returns its validity status"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200", 
+                    description = "Token validation result",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(
+                                    value = """
+                                    {
+                                      "valid": true,
+                                      "message": "Token is valid",
+                                      "timestamp": "2024-01-15T10:30:00"
+                                    }
+                                    """
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "400", 
+                    description = "Invalid token format",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(
+                                    value = """
+                                    {
+                                      "valid": false,
+                                      "message": "Invalid token format",
+                                      "timestamp": "2024-01-15T10:30:00"
+                                    }
+                                    """
+                            )
+                    )
+            )
+    })
     @PostMapping("/validate")
-    public ResponseEntity<Map<String, Object>> validateToken(@RequestHeader("Authorization") String authHeader) {
+    public ResponseEntity<Map<String, Object>> validateToken(
+            @Parameter(description = "Bearer token in Authorization header", example = "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")
+            @RequestHeader("Authorization") String authHeader) {
         Map<String, Object> response = new HashMap<>();
         response.put("timestamp", LocalDateTime.now());
         
@@ -74,8 +166,45 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
     
+    @Operation(
+            summary = "Get authentication status",
+            description = "Returns the current authentication status and associated policies if authenticated"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200", 
+                    description = "Authentication status retrieved",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = {
+                                    @ExampleObject(
+                                            name = "Authenticated",
+                                            value = """
+                                            {
+                                              "authenticated": true,
+                                              "policies": ["admin", "secrets-read"],
+                                              "timestamp": "2024-01-15T10:30:00"
+                                            }
+                                            """
+                                    ),
+                                    @ExampleObject(
+                                            name = "Not Authenticated",
+                                            value = """
+                                            {
+                                              "authenticated": false,
+                                              "timestamp": "2024-01-15T10:30:00"
+                                            }
+                                            """
+                                    )
+                            }
+                    )
+            )
+    })
+    @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/status")
-    public ResponseEntity<Map<String, Object>> getAuthStatus(@RequestHeader(value = "Authorization", required = false) String authHeader) {
+    public ResponseEntity<Map<String, Object>> getAuthStatus(
+            @Parameter(description = "Optional Bearer token in Authorization header")
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
         Map<String, Object> response = new HashMap<>();
         response.put("timestamp", LocalDateTime.now());
         response.put("authenticated", false);

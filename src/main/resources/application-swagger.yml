@@ -1,0 +1,32 @@
+# Additional Swagger/OpenAPI configuration
+springdoc:
+  api-docs:
+    path: /api-docs
+    enabled: true
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+    operations-sorter: alpha
+    tags-sorter: alpha
+    try-it-out-enabled: true
+    filter: true
+    deep-linking: true
+    display-request-duration: true
+    display-operation-id: false
+    default-models-expand-depth: 1
+    default-model-expand-depth: 1
+  show-actuator: true
+  paths-to-match: /v1/**
+  packages-to-scan: com.example.vault.controller
+
+# Server configuration
+server:
+  port: 8200
+  servlet:
+    context-path: /
+
+# Logging configuration for debugging
+logging:
+  level:
+    io.swagger: DEBUG
+    org.springdoc: DEBUG
