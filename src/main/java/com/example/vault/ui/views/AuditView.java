@@ -137,8 +137,63 @@ public class AuditView extends VerticalLayout {
     }
 
     private void exportLogs() {
-        com.vaadin.flow.component.notification.Notification.show("Export functionality - Coming soon!")
-                .addThemeVariants(com.vaadin.flow.component.notification.NotificationVariant.LUMO_CONTRAST);
+        try {
+            StringBuilder csv = new StringBuilder();
+            csv.append("Timestamp,User,Action,Resource,Result,Details\n");
+            
+            List<AuditEntry> filteredEntries = getFilteredEntries();
+            for (AuditEntry entry : filteredEntries) {
+                csv.append(String.format("\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\"\n",
+                    entry.getTimestamp().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")),
+                    entry.getUser(),
+                    entry.getAction(),
+                    entry.getResource(),
+                    entry.getResult(),
+                    entry.getDetails().replace("\"", "\"\"")
+                ));
+            }
+            
+            // Create a simple download by showing the data in a text area dialog
+            showExportDialog(csv.toString());
+            
+        } catch (Exception e) {
+            com.vaadin.flow.component.notification.Notification.show("Error exporting logs: " + e.getMessage())
+                .addThemeVariants(com.vaadin.flow.component.notification.NotificationVariant.LUMO_ERROR);
+        }
+    }
+    
+    private List<AuditEntry> getFilteredEntries() {
+        String searchTerm = searchField.getValue() != null ? searchField.getValue().toLowerCase() : "";
+        return auditEntries.stream()
+                .filter(entry -> searchTerm.isEmpty() || 
+                        entry.getUser().toLowerCase().contains(searchTerm) ||
+                        entry.getAction().toLowerCase().contains(searchTerm) ||
+                        entry.getResource().toLowerCase().contains(searchTerm))
+                .collect(Collectors.toList());
+    }
+    
+    private void showExportDialog(String csvData) {
+        com.vaadin.flow.component.dialog.Dialog dialog = new com.vaadin.flow.component.dialog.Dialog();
+        dialog.setModal(true);
+        dialog.setWidth("800px");
+        dialog.setHeight("600px");
+        dialog.setHeaderTitle("Export Data (CSV Format)");
+        
+        com.vaadin.flow.component.textfield.TextArea textArea = new com.vaadin.flow.component.textfield.TextArea();
+        textArea.setValue(csvData);
+        textArea.setSizeFull();
+        textArea.setReadOnly(true);
+        
+        com.vaadin.flow.component.html.Span instruction = new com.vaadin.flow.component.html.Span(
+            "Copy the data below and save it as a .csv file:");
+        instruction.getStyle().set("color", "var(--lumo-secondary-text-color)");
+        
+        com.vaadin.flow.component.button.Button closeButton = new com.vaadin.flow.component.button.Button("Close", e -> dialog.close());
+        closeButton.addThemeVariants(com.vaadin.flow.component.button.ButtonVariant.LUMO_PRIMARY);
+        
+        dialog.add(new com.vaadin.flow.component.orderedlayout.VerticalLayout(instruction, textArea));
+        dialog.getFooter().add(closeButton);
+        dialog.open();
     }
 
     private void createSampleData() {

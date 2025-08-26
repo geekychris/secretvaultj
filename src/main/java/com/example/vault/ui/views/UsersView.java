@@ -2,9 +2,12 @@ package com.example.vault.ui.views;
 
 import com.example.vault.entity.Identity;
 import com.example.vault.repository.IdentityRepository;
+import com.example.vault.repository.PolicyRepository;
+import com.example.vault.service.IdentityService;
 import com.example.vault.ui.layout.MainLayout;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.html.H2;
@@ -19,6 +22,7 @@ import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -29,13 +33,20 @@ import java.util.stream.Collectors;
 public class UsersView extends VerticalLayout {
 
     private final IdentityRepository identityRepository;
+    private final PolicyRepository policyRepository;
+    private final IdentityService identityService;
+    private final PasswordEncoder passwordEncoder;
     private final Grid<Identity> grid;
     private final TextField searchField;
     private List<Identity> users;
 
     @Autowired
-    public UsersView(IdentityRepository identityRepository) {
+    public UsersView(IdentityRepository identityRepository, PolicyRepository policyRepository, 
+                     IdentityService identityService, PasswordEncoder passwordEncoder) {
         this.identityRepository = identityRepository;
+        this.policyRepository = policyRepository;
+        this.identityService = identityService;
+        this.passwordEncoder = passwordEncoder;
         this.grid = new Grid<>(Identity.class, false);
         this.searchField = new TextField();
 
@@ -157,17 +168,54 @@ public class UsersView extends VerticalLayout {
     }
 
     private void addUser() {
-        Notification.show("Add User functionality - Coming soon!")
-                .addThemeVariants(NotificationVariant.LUMO_CONTRAST);
+        UserFormDialog dialog = new UserFormDialog(policyRepository);
+        dialog.addSaveListener(event -> saveUser(event.getUser(), true));
+        dialog.open();
     }
 
     private void editUser(Identity user) {
-        Notification.show("Edit User '" + user.getName() + "' - Coming soon!")
-                .addThemeVariants(NotificationVariant.LUMO_CONTRAST);
+        UserFormDialog dialog = new UserFormDialog(policyRepository, user);
+        dialog.addSaveListener(event -> saveUser(event.getUser(), false));
+        dialog.open();
     }
 
     private void deleteUser(Identity user) {
-        Notification.show("Delete User '" + user.getName() + "' - Coming soon!")
-                .addThemeVariants(NotificationVariant.LUMO_CONTRAST);
+        ConfirmDialog dialog = new ConfirmDialog();
+        dialog.setHeader("Delete User");
+        dialog.setText("Are you sure you want to delete user '" + user.getName() + "'? This action cannot be undone.");
+        dialog.setConfirmText("Delete");
+        dialog.setConfirmButtonTheme(ButtonVariant.LUMO_ERROR + " " + ButtonVariant.LUMO_PRIMARY);
+        dialog.addConfirmListener(event -> {
+            try {
+                identityService.deleteUser(user.getName());
+                Notification.show("User deleted successfully").addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+                updateList();
+            } catch (Exception e) {
+                Notification.show("Error deleting user: " + e.getMessage())
+                    .addThemeVariants(NotificationVariant.LUMO_ERROR);
+            }
+        });
+        dialog.open();
+    }
+    
+    private void saveUser(Identity user, boolean isNew) {
+        try {
+            if (isNew) {
+                // For new users, we need to encode the password
+                user.setPasswordHash(passwordEncoder.encode("changeme"));
+                identityRepository.save(user);
+                Notification.show("User created successfully. Default password is 'changeme'")
+                    .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+            } else {
+                // For existing users, save directly (password encoding handled in form if provided)
+                identityRepository.save(user);
+                Notification.show("User updated successfully")
+                    .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+            }
+            updateList();
+        } catch (Exception e) {
+            Notification.show("Error saving user: " + e.getMessage())
+                .addThemeVariants(NotificationVariant.LUMO_ERROR);
+        }
     }
 }

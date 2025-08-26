@@ -5,6 +5,7 @@ import com.example.vault.repository.PolicyRepository;
 import com.example.vault.ui.layout.MainLayout;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.icon.VaadinIcon;
@@ -170,22 +171,50 @@ public class PoliciesView extends VerticalLayout {
     }
 
     private void addPolicy() {
-        Notification.show("Add Policy functionality - Coming soon!")
-                .addThemeVariants(NotificationVariant.LUMO_CONTRAST);
+        PolicyFormDialog dialog = new PolicyFormDialog();
+        dialog.addSaveListener(event -> savePolicy(event.getPolicy(), true));
+        dialog.open();
     }
 
     private void viewPolicy(Policy policy) {
-        Notification.show("View Policy '" + policy.getName() + "' - Coming soon!")
-                .addThemeVariants(NotificationVariant.LUMO_CONTRAST);
+        PolicyDetailDialog dialog = new PolicyDetailDialog(policy);
+        dialog.open();
     }
 
     private void editPolicy(Policy policy) {
-        Notification.show("Edit Policy '" + policy.getName() + "' - Coming soon!")
-                .addThemeVariants(NotificationVariant.LUMO_CONTRAST);
+        PolicyFormDialog dialog = new PolicyFormDialog(policy);
+        dialog.addSaveListener(event -> savePolicy(event.getPolicy(), false));
+        dialog.open();
     }
 
     private void deletePolicy(Policy policy) {
-        Notification.show("Delete Policy '" + policy.getName() + "' - Coming soon!")
-                .addThemeVariants(NotificationVariant.LUMO_CONTRAST);
+        ConfirmDialog dialog = new ConfirmDialog();
+        dialog.setHeader("Delete Policy");
+        dialog.setText("Are you sure you want to delete policy '" + policy.getName() + "'? This action cannot be undone.");
+        dialog.setConfirmText("Delete");
+        dialog.setConfirmButtonTheme(ButtonVariant.LUMO_ERROR + " " + ButtonVariant.LUMO_PRIMARY);
+        dialog.addConfirmListener(event -> {
+            try {
+                policyRepository.delete(policy);
+                Notification.show("Policy deleted successfully").addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+                updateList();
+            } catch (Exception e) {
+                Notification.show("Error deleting policy: " + e.getMessage())
+                    .addThemeVariants(NotificationVariant.LUMO_ERROR);
+            }
+        });
+        dialog.open();
+    }
+    
+    private void savePolicy(Policy policy, boolean isNew) {
+        try {
+            policyRepository.save(policy);
+            String message = isNew ? "Policy created successfully" : "Policy updated successfully";
+            Notification.show(message).addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+            updateList();
+        } catch (Exception e) {
+            Notification.show("Error saving policy: " + e.getMessage())
+                .addThemeVariants(NotificationVariant.LUMO_ERROR);
+        }
     }
 }
