@@ -3,10 +3,17 @@ spring:
     name: java-vault
   
   datasource:
-    url: jdbc:h2:file:${user.home}/.vault/data/vault;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    url: jdbc:h2:file:${user.home}/.vault/data/vault;DB_CLOSE_DELAY=-1;AUTO_SERVER=TRUE;AUTO_SERVER_PORT=9090;LOCK_TIMEOUT=10000
     driverClassName: org.h2.Driver
     username: sa
     password:
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 20000
+      idle-timeout: 300000
+      max-lifetime: 1800000
+      leak-detection-threshold: 60000
   
   h2:
     console:
@@ -64,10 +71,16 @@ vault:
 
 logging:
   level:
-    com.example.vault: INFO
-    org.springframework.security: WARN
-    org.hibernate.SQL: WARN
+    com.example.vault: DEBUG
+    org.springframework.security: INFO
+    org.springframework.web: INFO
+    com.vaadin: INFO
+    com.vaadin.flow: INFO
+    com.vaadin.flow.router: DEBUG
+    com.vaadin.flow.server: INFO
+    org.hibernate.SQL: INFO
+    ROOT: INFO
   
   pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
     file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"

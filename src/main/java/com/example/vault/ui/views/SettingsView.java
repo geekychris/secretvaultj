@@ -12,9 +12,16 @@ import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Component;
+import jakarta.annotation.security.PermitAll;
 
+@Component
+@Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 @PageTitle("Settings")
 @Route(value = "settings", layout = MainLayout.class)
+@PermitAll
 public class SettingsView extends VerticalLayout {
 
     private TextField appName = new TextField("Application Name");

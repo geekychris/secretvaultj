@@ -16,6 +16,12 @@ import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Component;
+import jakarta.annotation.security.PermitAll;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -23,24 +29,35 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Component
+@Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 @PageTitle("Audit")
 @Route(value = "audit", layout = MainLayout.class)
+@PermitAll
 public class AuditView extends VerticalLayout {
 
+    private static final Logger logger = LoggerFactory.getLogger(AuditView.class);
     private final Grid<AuditEntry> grid;
     private final TextField searchField;
     private List<AuditEntry> auditEntries;
 
     public AuditView() {
-        this.grid = new Grid<>(AuditEntry.class, false);
-        this.searchField = new TextField();
+        logger.info("Initializing AuditView");
+        try {
+            this.grid = new Grid<>(AuditEntry.class, false);
+            this.searchField = new TextField();
 
-        setSizeFull();
-        createSampleData();
-        configureGrid();
-        configureSearch();
-        add(getToolbar(), getContent());
-        updateList();
+            setSizeFull();
+            createSampleData();
+            configureGrid();
+            configureSearch();
+            add(getToolbar(), getContent());
+            updateList();
+            logger.info("AuditView initialization completed");
+        } catch (Exception e) {
+            logger.error("Error initializing AuditView", e);
+            throw new IllegalStateException("Failed to initialize AuditView", e);
+        }
     }
 
     private void configureSearch() {
@@ -234,9 +251,8 @@ public class AuditView extends VerticalLayout {
         public LocalDateTime getTimestamp() { return timestamp; }
         public String getUser() { return user; }
         public String getAction() { return action; }
-        public String resource() { return resource; }
+        public String getResource() { return resource; }
         public String getResult() { return result; }
         public String getDetails() { return details; }
-        public String getResource() { return resource; }
     }
 }

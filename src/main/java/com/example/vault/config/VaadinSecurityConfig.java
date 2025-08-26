@@ -1,62 +1,62 @@
 package com.example.vault.config;
 
-import com.example.vault.security.JwtAuthenticationFilter;
+import com.vaadin.flow.spring.security.VaadinWebSecurity;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.annotation.Order;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.core.annotation.Order;
 
 /**
- * Security configuration for both Vaadin UI and REST API
- * This allows the UI to work alongside the existing API security
+ * Simple Vaadin security configuration
+ * Focus on getting the UI working first
  */
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity(prePostEnabled = true)
-public class VaadinSecurityConfig {
+public class VaadinSecurityConfig extends VaadinWebSecurity {
 
+    private static final Logger logger = LoggerFactory.getLogger(VaadinSecurityConfig.class);
+    
     @Autowired
-    private JwtAuthenticationFilter jwtAuthenticationFilter;
+    private UserDetailsService userDetailsService;
+    
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+        // Set LoginView as the login view
+        setLoginView(http, com.example.vault.ui.views.LoginView.class);
+        
+        // Call super.configure to get all the Vaadin security defaults
+        super.configure(http);
+        
+        // Configure form login with success URL
+        http.formLogin(form -> form
+            .defaultSuccessUrl("/secrets", true)
+        );
+    }
+    
     @Bean
-    @Order(1)
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http
-            .csrf(csrf -> csrf.disable())
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(auth -> auth
-                // Public API endpoints
-                .requestMatchers("/v1/auth/**").permitAll()
-                .requestMatchers("/v1/sys/health").permitAll()
-                .requestMatchers("/v1/sys/version").permitAll()
-                .requestMatchers("/v1/sys/status").permitAll()
-                .requestMatchers("/actuator/health").permitAll()
-                // Swagger/OpenAPI endpoints
-                .requestMatchers("/swagger-ui/**", "/swagger-ui.html").permitAll()
-                .requestMatchers("/v3/api-docs/**", "/api-docs/**").permitAll()
-                .requestMatchers("/swagger-resources/**", "/webjars/**").permitAll()
-                // H2 Console (for development)
-                .requestMatchers("/h2-console/**").permitAll()
-                // Vaadin UI paths - allow access for now
-                .requestMatchers("/", "/secrets/**", "/VAADIN/**", "/vite.json").permitAll()
-                // Admin and Secret API endpoints require authentication
-                .requestMatchers("/v1/admin/**", "/v1/secret/**").authenticated()
-                .anyRequest().authenticated()
-            )
-            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-            .httpBasic(basic -> basic.disable())
-            .formLogin(form -> form.disable());
-            
-        // Allow frames for H2 console
-        http.headers(headers -> headers
-                .frameOptions(frameOptions -> frameOptions.sameOrigin()));
-            
-        return http.build();
+    public DaoAuthenticationProvider authenticationProvider() {
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
+        provider.setUserDetailsService(userDetailsService);
+        provider.setPasswordEncoder(passwordEncoder);
+        return provider;
+    }
+    
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+        return config.getAuthenticationManager();
     }
 }
