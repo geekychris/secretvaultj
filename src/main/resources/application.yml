@@ -3,7 +3,7 @@ spring:
     name: java-vault
   
   datasource:
-    url: jdbc:h2:file:${user.home}/.vault/data/vault;DB_CLOSE_DELAY=-1;AUTO_SERVER=TRUE;AUTO_SERVER_PORT=9090;LOCK_TIMEOUT=10000
+    url: jdbc:h2:file:${user.home}/.vault/data/vault;DB_CLOSE_DELAY=-1;LOCK_TIMEOUT=10000
     driverClassName: org.h2.Driver
     username: sa
     password:
