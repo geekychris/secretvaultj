@@ -38,6 +38,12 @@ public class VaadinSecurityConfig extends VaadinWebSecurity {
         // Set LoginView as the login view
         setLoginView(http, com.example.vault.ui.views.LoginView.class);
         
+        // Configure additional settings for Vaadin communication
+        http
+            .headers(headers -> headers
+                .frameOptions().sameOrigin() // For H2 console compatibility
+            );
+        
         // Call super.configure to get all the Vaadin security defaults
         super.configure(http);
         

@@ -72,7 +72,9 @@ vault:
 logging:
   level:
     com.example.vault: DEBUG
-    org.springframework.security: INFO
+    org.springframework.security: DEBUG
+    org.springframework.security.authentication: DEBUG
+    org.springframework.security.web.authentication: DEBUG
     org.springframework.web: INFO
     com.vaadin: INFO
     com.vaadin.flow: INFO
