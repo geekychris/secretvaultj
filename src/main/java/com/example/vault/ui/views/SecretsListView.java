@@ -81,44 +81,53 @@ public class SecretsListView extends VerticalLayout {
         grid.addClassNames("secrets-grid");
         grid.setSizeFull();
         grid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
+        
+        // Enable column resizing and reordering
+        grid.setColumnReorderingAllowed(true);
 
         grid.addColumn(SecretUI::getPath)
                 .setHeader("Path")
                 .setSortable(true)
-                .setFlexGrow(2);
+                .setFlexGrow(2)
+                .setResizable(true);
 
         grid.addColumn(SecretUI::getKey)
                 .setHeader("Key")
                 .setSortable(true)
-                .setFlexGrow(1);
+                .setFlexGrow(1)
+                .setResizable(true);
 
         grid.addColumn(secret -> secret.getVersion() != null ? "v" + secret.getVersion() : "")
                 .setHeader("Version")
                 .setSortable(true)
                 .setWidth("100px")
-                .setFlexGrow(0);
+                .setFlexGrow(0)
+                .setResizable(true);
 
         grid.addColumn(secret -> {
             if (secret.getCreatedAt() != null) {
-                return secret.getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
+                return secret.getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
             }
             return "";
         })
                 .setHeader("Created")
                 .setSortable(true)
-                .setWidth("150px")
-                .setFlexGrow(0);
+                .setWidth("220px")
+                .setFlexGrow(0)
+                .setResizable(true);
 
         grid.addColumn(SecretUI::getCreatedBy)
                 .setHeader("Created By")
                 .setSortable(true)
-                .setWidth("120px")
-                .setFlexGrow(0);
+                .setWidth("130px")
+                .setFlexGrow(0)
+                .setResizable(true);
 
         grid.addComponentColumn(this::createActionButtons)
                 .setHeader("Actions")
                 .setWidth("200px")
-                .setFlexGrow(0);
+                .setFlexGrow(0)
+                .setResizable(true);
 
         grid.asSingleSelect().addValueChangeListener(event -> {
             if (event.getValue() != null) {
