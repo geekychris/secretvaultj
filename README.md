@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/logo.png" alt="Secretvaultj logo" width="180">
+</p>
+
 # Java Vault - HashiCorp Vault-like Secrets Management Service
 
 Java Vault is a Spring Boot-based secrets management service that provides functionality similar to HashiCorp Vault. It offers identity-based access control, hierarchical secrets storage, encryption, and multi-instance replication capabilities.
